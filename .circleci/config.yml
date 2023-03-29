@@ -1,0 +1,46 @@
+version: 2.1
+
+executors:
+  node_env_exec:
+    docker:
+      - image: cimg/node:12.11.0
+
+jobs:
+  lint:
+    executor: node_env_exec
+    steps:
+      - checkout
+      - run: pwd
+      - run: npm install
+      - save_cache:
+          paths:
+            - node_modules
+          key: "cached-modules-${CIRCLE_WORKFLOW_ID}"
+      - run: npm run lint
+
+  test:
+    executor: node_env_exec
+    steps:
+      - checkout
+      - restore_cache:
+          key: "cached-modules-${CIRCLE_WORKFLOW_ID}"
+      - run: npm run test
+
+  analyze:
+    executor: node_env_exec
+    steps:
+      - checkout
+      - restore_cache:
+          key: "cached-modules-${CIRCLE_WORKFLOW_ID}"
+      - run: npm audit
+
+workflows:
+  lint_test:
+    jobs:
+      - lint
+      - test:
+          requires:
+            - lint
+      - analyze:
+          requires:
+            - lint
